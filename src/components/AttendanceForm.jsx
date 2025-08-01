@@ -21,7 +21,7 @@ const AttendanceForm = () => {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const courseFromUrl = urlParams.get('curso') || urlParams.get('course');
+    const courseFromUrl = urlParams.get('curso') || urlParams.get('course') || urlParams.get('reuniao');
     if (courseFromUrl) {
       setFormData(prev => ({ ...prev, course: decodeURIComponent(courseFromUrl) }));
     }
