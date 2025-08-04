@@ -5,6 +5,8 @@ import { Camera, Upload, CheckCircle, QrCode, User, WalletCards as IdCard, BookO
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAttendance } from '@/contexts/AttendanceContext';
+import { APP_CONFIG } from '@/lib/config';
+import SuccessMessage from './SuccessMessage';
 
 const AttendanceForm = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +18,7 @@ const AttendanceForm = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSavedLocally, setIsSavedLocally] = useState(false);
   const { saveRecord } = useAttendance();
   const { toast } = useToast();
 
@@ -35,10 +38,10 @@ const AttendanceForm = () => {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > APP_CONFIG.MAX_PHOTO_SIZE) {
         toast({
           title: "Arquivo muito grande",
-          description: "A foto deve ter no máximo 5MB.",
+          description: `A foto deve ter no máximo ${APP_CONFIG.MAX_PHOTO_SIZE / (1024 * 1024)}MB.`,
           variant: "destructive"
         });
         return;
@@ -69,15 +72,29 @@ const AttendanceForm = () => {
     setIsSubmitting(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      saveRecord({
+      const result = await saveRecord({
         fullName: formData.fullName.trim(),
         registration: formData.registration.trim(),
         course: formData.course.trim() || 'Não informado',
         photo: formData.photo,
         hasPhoto: !!formData.photo
       });
+
+      // Mostrar mensagem apropriada baseada no resultado
+      if (result.savedLocally) {
+        setIsSavedLocally(true);
+        toast({
+          title: "Registro salvo com sucesso!",
+          description: result.message,
+          variant: "default"
+        });
+      } else {
+        setIsSavedLocally(false);
+        toast({
+          title: "Presença registrada!",
+          description: result.message,
+        });
+      }
 
       setShowSuccess(true);
       
@@ -90,12 +107,15 @@ const AttendanceForm = () => {
         });
         setPhotoPreview(null);
         setShowSuccess(false);
+        setIsSavedLocally(false);
       }, 3000);
 
     } catch (error) {
+      console.error('Erro inesperado ao salvar registro:', error);
+      
       toast({
         title: "Erro ao registrar presença",
-        description: "Tente novamente em alguns instantes.",
+        description: "Ocorreu um erro inesperado. Tente novamente em alguns instantes.",
         variant: "destructive"
       });
     } finally {
@@ -104,23 +124,7 @@ const AttendanceForm = () => {
   };
 
   if (showSuccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center space-y-6 success-animation"
-        >
-          <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-12 h-12 text-green-600" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-green-600">Presença Registrada!</h2>
-            <p className="text-gray-600">Obrigado por confirmar sua presença.</p>
-          </div>
-        </motion.div>
-      </div>
-    );
+    return <SuccessMessage isSavedLocally={isSavedLocally} />;
   }
 
   return (

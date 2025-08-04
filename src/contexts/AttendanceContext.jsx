@@ -1,5 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiService } from '@/lib/api';
+import { APP_CONFIG } from '@/lib/config';
 
 const AttendanceContext = createContext();
 
@@ -14,20 +16,41 @@ export const useAttendance = () => {
 export const AttendanceProvider = ({ children }) => {
   const [records, setRecords] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const savedRecords = localStorage.getItem('attendanceRecords');
-    if (savedRecords) {
-      setRecords(JSON.parse(savedRecords));
-    }
-
-    const adminStatus = localStorage.getItem('isAdminLoggedIn');
+    const adminStatus = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ADMIN_LOGIN);
     if (adminStatus === 'true') {
       setIsAdmin(true);
     }
   }, []);
 
-  const saveRecord = (record) => {
+  // Carregar registros da API
+  const loadRecords = async () => {
+    setIsLoading(true);
+    try {
+      const data = await apiService.getRecords();
+      setRecords(data);
+    } catch (error) {
+      console.error('Erro ao carregar registros:', error);
+      // Em caso de erro, manter registros locais como fallback
+      const savedRecords = localStorage.getItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS);
+      if (savedRecords) {
+        setRecords(JSON.parse(savedRecords));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Carregar registros quando o admin fizer login
+  useEffect(() => {
+    if (isAdmin) {
+      loadRecords();
+    }
+  }, [isAdmin]);
+
+  const saveRecord = async (record) => {
     const newRecord = {
       ...record,
       id: Date.now().toString(),
@@ -36,15 +59,39 @@ export const AttendanceProvider = ({ children }) => {
       time: new Date().toLocaleTimeString('pt-BR')
     };
 
-    const updatedRecords = [...records, newRecord];
-    setRecords(updatedRecords);
-    localStorage.setItem('attendanceRecords', JSON.stringify(updatedRecords));
+    try {
+      // Salvar na API
+      await apiService.saveRecord(newRecord);
+      
+      // Atualizar estado local
+      const updatedRecords = [...records, newRecord];
+      setRecords(updatedRecords);
+      
+      // Manter backup local
+      localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS, JSON.stringify(updatedRecords));
+      
+      return { success: true, message: 'Registro salvo com sucesso na planilha' };
+    } catch (error) {
+      console.error('Erro ao salvar registro na API:', error);
+      
+      // Fallback: salvar localmente
+      const updatedRecords = [...records, newRecord];
+      setRecords(updatedRecords);
+      localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS, JSON.stringify(updatedRecords));
+      
+      // Retornar sucesso mesmo com erro de API, pois dados foram salvos localmente
+      return { 
+        success: true, 
+        message: 'Registro salvo localmente. Os dados serão sincronizados quando a conexão for restaurada.',
+        savedLocally: true 
+      };
+    }
   };
 
   const loginAdmin = (username, password) => {
-    if (username === 'admin' && password === 'crc@123') {
+    if (username === APP_CONFIG.ADMIN_USERNAME && password === APP_CONFIG.ADMIN_PASSWORD) {
       setIsAdmin(true);
-      localStorage.setItem('isAdminLoggedIn', 'true');
+      localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ADMIN_LOGIN, 'true');
       return true;
     }
     return false;
@@ -52,12 +99,22 @@ export const AttendanceProvider = ({ children }) => {
 
   const logoutAdmin = () => {
     setIsAdmin(false);
-    localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ADMIN_LOGIN);
   };
 
-  const clearAllRecords = () => {
-    setRecords([]);
-    localStorage.removeItem('attendanceRecords');
+  const clearAllRecords = async () => {
+    try {
+      // Limpar na API
+      await apiService.clearAllRecords();
+      setRecords([]);
+      localStorage.removeItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS);
+    } catch (error) {
+      console.error('Erro ao limpar registros na API:', error);
+      // Fallback: limpar apenas localmente
+      setRecords([]);
+      localStorage.removeItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS);
+      throw error;
+    }
   };
 
   return (
@@ -67,7 +124,9 @@ export const AttendanceProvider = ({ children }) => {
       isAdmin,
       loginAdmin,
       logoutAdmin,
-      clearAllRecords
+      clearAllRecords,
+      isLoading,
+      loadRecords
     }}>
       {children}
     </AttendanceContext.Provider>

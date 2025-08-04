@@ -12,18 +12,24 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Eye
+  Eye,
+  AlertCircle,
+  Wifi
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAttendance } from '@/contexts/AttendanceContext';
+import { apiService } from '@/lib/api';
+import DiagnosticPanel from './DiagnosticPanel';
+import StatusIndicator from './StatusIndicator';
 import * as XLSX from 'xlsx';
 
 const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCourse, setFilterCourse] = useState('');
   const [filteredRecords, setFilteredRecords] = useState([]);
-  const { records, logoutAdmin, isAdmin, clearAllRecords } = useAttendance();
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const { records, logoutAdmin, isAdmin, clearAllRecords, isLoading, loadRecords } = useAttendance();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -135,12 +141,53 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleClearAllRecords = () => {
+  const handleClearAllRecords = async () => {
     if (window.confirm('Tem certeza que deseja excluir todos os registros? Esta ação não pode ser desfeita.')) {
-      clearAllRecords();
+      try {
+        await clearAllRecords();
+        toast({
+          title: "Registros excluídos",
+          description: "Todos os registros foram removidos com sucesso."
+        });
+      } catch (error) {
+        toast({
+          title: "Erro ao excluir registros",
+          description: "Não foi possível excluir os registros. Tente novamente.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleRefreshRecords = async () => {
+    try {
+      await loadRecords();
       toast({
-        title: "Registros excluídos",
-        description: "Todos os registros foram removidos com sucesso."
+        title: "Dados atualizados",
+        description: "Os registros foram atualizados com sucesso."
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar os registros. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      await apiService.testConnection();
+      toast({
+        title: "Conexão OK",
+        description: "A API do Google Sheets está funcionando corretamente."
+      });
+    } catch (error) {
+      console.error('Erro no teste de conexão:', error);
+      toast({
+        title: "Erro de Conexão",
+        description: error.message || "Não foi possível conectar com a API do Google Sheets.",
+        variant: "destructive"
       });
     }
   };
@@ -171,6 +218,9 @@ const AdminDashboard = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo</h1>
               <p className="text-gray-600">Gerencie os registros de presença</p>
+              <div className="flex items-center mt-2">
+                <StatusIndicator />
+              </div>
             </div>
             <Button
               onClick={handleLogout}
@@ -268,6 +318,34 @@ const AdminDashboard = () => {
 
             <div className="flex gap-2">
               <Button
+                onClick={() => setShowDiagnostic(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Wifi className="w-4 h-4" />
+                Diagnóstico
+              </Button>
+              
+              <Button
+                onClick={handleTestConnection}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Wifi className="w-4 h-4" />
+                Testar Conexão
+              </Button>
+              
+              <Button
+                onClick={handleRefreshRecords}
+                disabled={isLoading}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Atualizando...' : 'Atualizar'}
+              </Button>
+              
+              <Button
                 onClick={exportToExcel}
                 className="btn-primary flex items-center gap-2"
               >
@@ -297,7 +375,19 @@ const AdminDashboard = () => {
             </h2>
           </div>
 
-          {filteredRecords.length === 0 ? (
+          {isLoading ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Carregando registros...
+              </h3>
+              <p className="text-gray-600">
+                Aguarde enquanto buscamos os dados da planilha.
+              </p>
+            </div>
+          ) : filteredRecords.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <Users className="w-8 h-8 text-gray-400" />
@@ -403,6 +493,11 @@ const AdminDashboard = () => {
           )}
         </div>
       </motion.div>
+      
+      <DiagnosticPanel 
+        isOpen={showDiagnostic} 
+        onClose={() => setShowDiagnostic(false)} 
+      />
     </div>
   );
 };
