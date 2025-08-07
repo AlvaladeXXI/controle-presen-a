@@ -19,6 +19,7 @@ const AttendanceForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSavedLocally, setIsSavedLocally] = useState(false);
+  const [backend, setBackend] = useState(null);
   const { saveRecord } = useAttendance();
   const { toast } = useToast();
 
@@ -90,6 +91,7 @@ const AttendanceForm = () => {
         });
       } else {
         setIsSavedLocally(false);
+        setBackend(result.backend);
         toast({
           title: "Presença registrada!",
           description: result.message,
@@ -124,7 +126,7 @@ const AttendanceForm = () => {
   };
 
   if (showSuccess) {
-    return <SuccessMessage isSavedLocally={isSavedLocally} />;
+    return <SuccessMessage isSavedLocally={isSavedLocally} backend={backend} />;
   }
 
   return (

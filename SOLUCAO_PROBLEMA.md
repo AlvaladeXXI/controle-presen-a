@@ -1,91 +1,194 @@
-# ✅ Solução para o Problema "Erro na Inscrição"
+# Solução para Problemas de Conectividade
 
-## 🔍 **Problema Identificado**
+## Problema Identificado
 
-O sistema estava funcionando corretamente, mas apresentava um problema de comunicação:
+O sistema está mostrando "Problemas de conexão - Dados salvos localmente" porque não consegue se conectar com a API do Google Sheets.
 
-- **✅ Dados chegavam na planilha** - Confirmado pelos registros na área administrativa
-- **✅ API estava conectada** - Status mostrava "Conectado ao Google Sheets"
-- **❌ Usuário recebia erro** - Mensagem "Erro ao registrar presença"
+## Diagnóstico
 
-## 🎯 **Causa Raiz**
+### 1. Verificar a URL da API
 
-O problema estava no **tratamento da resposta da API**. O Google Apps Script estava:
-1. Salvando os dados corretamente na planilha
-2. Retornando uma resposta que não estava no formato JSON esperado
-3. O frontend interpretava isso como erro, mesmo com os dados salvos
-
-## 🔧 **Soluções Implementadas**
-
-### 1. **Tratamento Flexível de Resposta**
-```javascript
-// Antes: Exigia JSON válido
-const result = await response.json();
-
-// Agora: Aceita diferentes formatos
-let result;
-try {
-  result = await response.json();
-} catch (parseError) {
-  // Se não for JSON, mas status for 200, considera sucesso
-  result = { success: true, message: 'Registro salvo com sucesso' };
-}
+A URL atual configurada é:
+```
+https://script.google.com/macros/s/AKfycbwE04qvYgq-PhVhfWF7YmJHhU3sHsDF2gBYcXecwvZcgA6oLSqpIdDqKAnYnDwrDUzmtA/exec
 ```
 
-### 2. **Mensagens de Erro Inteligentes**
-- Se os dados são salvos mas há problema na resposta → Mostra sucesso
-- Se há erro real de conexão → Mostra erro
-- Diferencia entre problemas de rede e problemas de resposta
+**Para testar:**
+1. Abra o painel de diagnóstico no sistema
+2. Clique no botão de link externo para testar a URL
+3. Se a página não carregar, a URL está incorreta ou o script não está publicado
 
-### 3. **Indicador de Status Melhorado**
-- Mostra status real da conexão
-- Indica quando dados são salvos localmente
-- Permite verificar conexão manualmente
+### 2. Configurar o Google Apps Script
 
-### 4. **Logs Detalhados**
-- Logs completos no console
-- Identifica exatamente onde está o problema
-- Facilita diagnóstico futuro
+#### Passo a Passo:
 
-## 📊 **Resultado**
+1. **Acesse o Google Apps Script:**
+   - Vá para https://script.google.com
+   - Faça login com sua conta Google
 
-Agora o sistema:
+2. **Crie um novo projeto:**
+   - Clique em "Novo projeto"
+   - Dê um nome como "API Controle de Presença"
 
-1. **Salva os dados corretamente** na planilha do Google Sheets
-2. **Mostra sucesso para o usuário** quando os dados são salvos
-3. **Continua funcionando** mesmo com problemas de resposta da API
-4. **Fornece feedback claro** sobre o status da operação
+3. **Configure o código:**
+   ```javascript
+   function doGet(e) {
+     return handleRequest(e);
+   }
+   
+   function doPost(e) {
+     return handleRequest(e);
+   }
+   
+   function handleRequest(e) {
+     // Configurar CORS
+     const headers = {
+       'Access-Control-Allow-Origin': '*',
+       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+       'Access-Control-Allow-Headers': 'Content-Type',
+       'Content-Type': 'application/json'
+     };
+     
+     // Se for uma requisição OPTIONS (CORS preflight)
+     if (e.parameter.action === 'test') {
+       return ContentService.createTextOutput(JSON.stringify({
+         success: true,
+         message: 'API funcionando'
+       })).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+     }
+     
+     // Se for para buscar registros
+     if (e.parameter.action === 'getRecords') {
+       try {
+         const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+         const data = sheet.getDataRange().getValues();
+         
+         return ContentService.createTextOutput(JSON.stringify({
+           success: true,
+           data: data
+         })).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+       } catch (error) {
+         return ContentService.createTextOutput(JSON.stringify({
+           success: false,
+           message: error.toString()
+         })).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+       }
+     }
+     
+     // Se for para salvar registro
+     if (e.postData && e.postData.contents) {
+       try {
+         const data = JSON.parse(e.postData.contents);
+         
+         if (data.action === 'saveRecord') {
+           const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+           const record = data.data;
+           
+           sheet.appendRow([
+             record.fullName,
+             record.registration,
+             record.course,
+             record.date,
+             record.time,
+             record.hasPhoto ? 'Sim' : 'Não'
+           ]);
+           
+           return ContentService.createTextOutput(JSON.stringify({
+             success: true,
+             message: 'Registro salvo com sucesso'
+           })).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+         }
+         
+         if (data.action === 'clearAllRecords') {
+           const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+           sheet.clear();
+           
+           return ContentService.createTextOutput(JSON.stringify({
+             success: true,
+             message: 'Registros limpos com sucesso'
+           })).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+         }
+         
+       } catch (error) {
+         return ContentService.createTextOutput(JSON.stringify({
+           success: false,
+           message: error.toString()
+         })).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+       }
+     }
+     
+     return ContentService.createTextOutput(JSON.stringify({
+       success: false,
+       message: 'Ação não reconhecida'
+     })).setMimeType(ContentService.MimeType.JSON).setHeaders(headers);
+   }
+   ```
 
-## 🧪 **Como Testar**
+4. **Publique o script:**
+   - Clique em "Deploy" > "New deployment"
+   - Escolha "Web app"
+   - Configure:
+     - Execute as: "Me"
+     - Who has access: "Anyone"
+   - Clique em "Deploy"
+   - Copie a URL gerada
 
-1. **Acesse o formulário:** `http://localhost:5173/`
-2. **Preencha os dados** e envie
-3. **Verifique:**
-   - Mensagem de sucesso aparece
-   - Dados aparecem na área administrativa
-   - Status mostra "Conectado ao Google Sheets"
+5. **Atualize a configuração:**
+   - Abra `src/lib/config.js`
+   - Substitua a URL da API pela nova URL
 
-## 🔄 **Fallback Robusto**
+### 3. Verificar a Planilha
 
-O sistema agora tem múltiplas camadas de proteção:
+1. **Criar uma planilha no Google Sheets**
+2. **Compartilhar a planilha** com a conta que executa o script
+3. **Configurar o script** para acessar a planilha correta
 
-1. **Tenta salvar na API** do Google Sheets
-2. **Se falhar, salva localmente** (localStorage)
-3. **Mostra status apropriado** para cada situação
-4. **Sincroniza quando possível**
+### 4. Testar a Conexão
 
-## 📈 **Benefícios**
+1. **Use o painel de diagnóstico** no sistema
+2. **Clique em "Executar Diagnóstico Completo"**
+3. **Verifique os resultados** de cada teste
 
-- ✅ **Experiência do usuário melhorada** - Não recebe mais erros falsos
-- ✅ **Dados sempre salvos** - Mesmo com problemas de API
-- ✅ **Diagnóstico fácil** - Logs e indicadores claros
-- ✅ **Operação contínua** - Sistema funciona offline
-- ✅ **Feedback claro** - Usuário sabe o que aconteceu
+## Soluções Alternativas
 
-## 🎉 **Conclusão**
+### Se o Google Apps Script não funcionar:
 
-O problema foi resolvido! O sistema agora:
-- **Funciona corretamente** em todas as situações
-- **Fornece feedback preciso** ao usuário
-- **Mantém dados seguros** com fallback local
-- **Facilita manutenção** com logs detalhados 
+1. **Usar uma API alternativa** (Firebase, Supabase, etc.)
+2. **Configurar um servidor próprio** (Node.js, Python, etc.)
+3. **Usar apenas armazenamento local** (sem sincronização)
+
+### Para problemas de CORS:
+
+1. **Adicionar headers CORS** no script
+2. **Usar um proxy CORS** temporariamente
+3. **Configurar um servidor intermediário**
+
+## Logs e Debug
+
+### Verificar logs no navegador:
+1. Abra as ferramentas do desenvolvedor (F12)
+2. Vá para a aba "Console"
+3. Procure por erros relacionados à API
+
+### Comandos úteis:
+```javascript
+// Testar a API diretamente no console
+fetch('SUA_URL_AQUI?action=test')
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch(error => console.error(error));
+```
+
+## Contato para Suporte
+
+Se o problema persistir:
+1. Execute o diagnóstico completo
+2. Copie os logs de erro
+3. Verifique se a URL da API está correta
+4. Teste a URL diretamente no navegador
+
+## Status do Sistema
+
+- ✅ **Funcionamento offline**: Os dados são salvos localmente
+- ✅ **Sincronização**: Quando a conexão for restaurada, os dados serão sincronizados
+- ⚠️ **API**: Precisa ser configurada corretamente para funcionamento completo 

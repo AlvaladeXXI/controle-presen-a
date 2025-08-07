@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Wifi, WifiOff } from 'lucide-react';
 
-const SuccessMessage = ({ isSavedLocally = false }) => {
+const SuccessMessage = ({ isSavedLocally = false, backend = null }) => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <motion.div
@@ -45,7 +45,7 @@ const SuccessMessage = ({ isSavedLocally = false }) => {
                   </span>
                 </div>
                 <p className="text-sm text-green-700">
-                  Os dados foram enviados com sucesso para a planilha do Google Sheets.
+                  Os dados foram enviados com sucesso para o Supabase.
                 </p>
               </div>
             </div>

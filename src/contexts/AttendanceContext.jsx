@@ -61,7 +61,7 @@ export const AttendanceProvider = ({ children }) => {
 
     try {
       // Salvar na API
-      await apiService.saveRecord(newRecord);
+      const result = await apiService.saveRecord(newRecord);
       
       // Atualizar estado local
       const updatedRecords = [...records, newRecord];
@@ -70,7 +70,11 @@ export const AttendanceProvider = ({ children }) => {
       // Manter backup local
       localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS, JSON.stringify(updatedRecords));
       
-      return { success: true, message: 'Registro salvo com sucesso na planilha' };
+      return { 
+        success: true, 
+        message: 'Registro salvo com sucesso no Supabase',
+        backend: 'supabase'
+      };
     } catch (error) {
       console.error('Erro ao salvar registro na API:', error);
       
@@ -88,20 +92,6 @@ export const AttendanceProvider = ({ children }) => {
     }
   };
 
-  const loginAdmin = (username, password) => {
-    if (username === APP_CONFIG.ADMIN_USERNAME && password === APP_CONFIG.ADMIN_PASSWORD) {
-      setIsAdmin(true);
-      localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ADMIN_LOGIN, 'true');
-      return true;
-    }
-    return false;
-  };
-
-  const logoutAdmin = () => {
-    setIsAdmin(false);
-    localStorage.removeItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ADMIN_LOGIN);
-  };
-
   const clearAllRecords = async () => {
     try {
       // Limpar na API
@@ -117,16 +107,43 @@ export const AttendanceProvider = ({ children }) => {
     }
   };
 
+  // Funções de login/logout
+  const loginAdmin = (username, password) => {
+    if (username === APP_CONFIG.ADMIN_USERNAME && password === APP_CONFIG.ADMIN_PASSWORD) {
+      setIsAdmin(true);
+      localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ADMIN_LOGIN, 'true');
+      return true;
+    }
+    return false;
+  };
+
+  const logoutAdmin = () => {
+    setIsAdmin(false);
+    localStorage.removeItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ADMIN_LOGIN);
+  };
+
+  // Função para testar conexão
+  const testConnection = async () => {
+    try {
+      const result = await apiService.testConnection();
+      return { success: true, message: result.message };
+    } catch (error) {
+      return { success: false, message: 'Erro na conexão: ' + error.message };
+    }
+  };
+
   return (
     <AttendanceContext.Provider value={{
       records,
       saveRecord,
       isAdmin,
-      loginAdmin,
-      logoutAdmin,
+      setIsAdmin,
       clearAllRecords,
       isLoading,
-      loadRecords
+      loadRecords,
+      loginAdmin,
+      logoutAdmin,
+      testConnection
     }}>
       {children}
     </AttendanceContext.Provider>

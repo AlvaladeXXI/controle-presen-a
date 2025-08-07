@@ -1,0 +1,5 @@
+# Configurações do Supabase
+# Copie este conteúdo para um arquivo chamado .env na raiz do projeto
+
+VITE_SUPABASE_URL=https://errcyrmmbcacwdoueepg.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVycmN5cm1tYmNhY3dkb3VlZXBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTE5NDMsImV4cCI6MjA2OTk4Nzk0M30.cv4-PedrD9lpjg1IfSyHVizOgHh9mRbI8mfMDAaDTc4 

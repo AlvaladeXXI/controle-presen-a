@@ -1,6 +1,6 @@
 # Sistema de Controle de Presença
 
-Este é um sistema de controle de presença que integra com Google Sheets para armazenamento de dados.
+Este é um sistema de controle de presença que integra com Supabase para armazenamento de dados.
 
 ## Funcionalidades
 
@@ -8,7 +8,7 @@ Este é um sistema de controle de presença que integra com Google Sheets para a
 - Registro de nome completo e matrícula/CPF
 - Campo opcional para curso/reunião
 - Upload de foto (opcional, máximo 5MB)
-- Integração automática com Google Sheets
+- Integração automática com Supabase
 - Fallback para armazenamento local em caso de erro
 
 ### Área Administrativa
@@ -20,23 +20,21 @@ Este é um sistema de controle de presença que integra com Google Sheets para a
 - Limpeza de registros
 - Indicadores de status da conexão
 
-## Integração com Google Sheets
+## Integração com Supabase
 
-### Configuração da API
-A URL da API do Google Sheets está configurada em `src/lib/config.js`:
+### Configuração do Supabase
+As configurações do Supabase estão em `src/lib/supabaseClient.js` e requerem as seguintes variáveis de ambiente:
 
-```javascript
-export const API_CONFIG = {
-  GOOGLE_SHEETS_URL: 'https://script.google.com/macros/s/AKfycbzJOAwnTas5wOsx5R5LffjX5sQ7zxdHeLDGKno3DpMgxAaC0Jh6cRoUUsGQEaJaDUVw/exec',
-  // ...
-};
+```env
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-anonima
 ```
 
-### Endpoints da API
+### Operações da API
 
-#### 1. Salvar Registro (POST)
+#### 1. Salvar Registro
 ```javascript
-// Envia novo registro para a planilha
+// Envia novo registro para o Supabase
 await apiService.saveRecord({
   fullName: "Nome Completo",
   registration: "123456789",
@@ -49,15 +47,15 @@ await apiService.saveRecord({
 });
 ```
 
-#### 2. Buscar Registros (GET)
+#### 2. Buscar Registros
 ```javascript
-// Busca todos os registros da planilha
+// Busca todos os registros do Supabase
 const records = await apiService.getRecords();
 ```
 
-#### 3. Limpar Registros (POST)
+#### 3. Limpar Registros
 ```javascript
-// Remove todos os registros da planilha
+// Remove todos os registros do Supabase
 await apiService.clearAllRecords();
 ```
 
@@ -76,23 +74,28 @@ Cada registro contém:
 
 ### Tratamento de Erros
 
-O sistema implementa fallback robusto:
-1. **Tenta salvar na API do Google Sheets**
+O sistema implementa tratamento robusto de erros:
+1. **Tenta salvar no Supabase**
 2. **Se falhar, salva localmente** (localStorage)
-3. **Mantém sincronização** quando possível
-4. **Exibe mensagens de erro** apropriadas
+3. **Exibe mensagens de erro** apropriadas
+4. **Validação de configuração** do Supabase
 
 ### Configurações
 
-As configurações estão centralizadas em `src/lib/config.js`:
+As configurações estão centralizadas em `src/lib/config.js` e `src/lib/supabaseClient.js`:
 
 ```javascript
+// Configurações gerais
 export const APP_CONFIG = {
   ADMIN_USERNAME: 'admin',
   ADMIN_PASSWORD: 'crc@123',
   MAX_PHOTO_SIZE: 5 * 1024 * 1024, // 5MB
   // ...
 };
+
+// Configurações do Supabase
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 ```
 
 ## Instalação e Uso
@@ -136,9 +139,9 @@ src/
 
 ## Manutenção
 
-Para alterar a URL da API do Google Sheets:
-1. Edite `src/lib/config.js`
-2. Atualize `API_CONFIG.GOOGLE_SHEETS_URL`
+Para alterar as configurações do Supabase:
+1. Edite o arquivo `.env`
+2. Atualize `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
 3. Reinicie o aplicativo
 
 Para alterar credenciais do admin:

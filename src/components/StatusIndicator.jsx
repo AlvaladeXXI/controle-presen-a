@@ -27,7 +27,7 @@ const StatusIndicator = () => {
       case 'connected':
         return {
           icon: <CheckCircle className="w-4 h-4 text-green-600" />,
-          text: 'Conectado ao Google Sheets',
+          text: 'Conectado ao Supabase',
           color: 'text-green-600',
           bgColor: 'bg-green-50'
         };

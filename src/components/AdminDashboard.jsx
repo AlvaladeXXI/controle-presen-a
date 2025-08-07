@@ -180,13 +180,13 @@ const AdminDashboard = () => {
       await apiService.testConnection();
       toast({
         title: "Conexão OK",
-        description: "A API do Google Sheets está funcionando corretamente."
+        description: "O Supabase está funcionando corretamente."
       });
     } catch (error) {
       console.error('Erro no teste de conexão:', error);
       toast({
         title: "Erro de Conexão",
-        description: error.message || "Não foi possível conectar com a API do Google Sheets.",
+        description: error.message || "Não foi possível conectar com o Supabase.",
         variant: "destructive"
       });
     }

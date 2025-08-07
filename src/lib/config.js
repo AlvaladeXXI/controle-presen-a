@@ -1,7 +1,5 @@
-// Configurações da API do Google Sheets
+// Configurações gerais da aplicação
 export const API_CONFIG = {
-  GOOGLE_SHEETS_URL: 'https://script.google.com/macros/s/AKfycbwE04qvYgq-PhVhfWF7YmJHhU3sHsDF2gBYcXecwvZcgA6oLSqpIdDqKAnYnDwrDUzmtA/exec',
-  
   // Configurações de timeout
   REQUEST_TIMEOUT: 30000, // 30 segundos
   
