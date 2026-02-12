@@ -75,7 +75,7 @@ export const AttendanceProvider = ({ children }) => {
         message: 'Registro salvo com sucesso no Supabase',
         backend: 'supabase'
       };
-    } catch (error) {
+      } catch (error) {
   console.error('Erro ao salvar registro na API:', error);
 
   // 🔒 Se for erro de duplicidade (UNIQUE constraint)
@@ -84,17 +84,22 @@ export const AttendanceProvider = ({ children }) => {
       success: false,
       message: 'Presença já registrada para hoje.'
     };
+  }
 
   // 🌐 Se for erro de conexão, usa fallback local
   const updatedRecords = [...records, newRecord];
   setRecords(updatedRecords);
-  localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS, JSON.stringify(updatedRecords));
+  localStorage.setItem(
+    APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS,
+    JSON.stringify(updatedRecords)
+  );
 
   return { 
     success: true, 
     message: 'Registro salvo localmente. Os dados serão sincronizados quando a conexão for restaurada.',
     savedLocally: true 
   };
+}
 
   const clearAllRecords = async () => {
     try {
