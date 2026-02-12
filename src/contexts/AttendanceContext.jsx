@@ -51,55 +51,57 @@ export const AttendanceProvider = ({ children }) => {
   }, [isAdmin]);
 
   const saveRecord = async (record) => {
-    const newRecord = {
-      ...record,
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      date: new Date().toLocaleDateString('pt-BR'),
-      time: new Date().toLocaleTimeString('pt-BR')
-    };
+  const newRecord = {
+    ...record,
+    id: Date.now().toString(),
+    timestamp: new Date().toISOString(),
+    date: new Date().toLocaleDateString('pt-BR'),
+    time: new Date().toLocaleTimeString('pt-BR')
+  };
 
-    try {
-      // Salvar na API
-      const result = await apiService.saveRecord(newRecord);
-      
-      // Atualizar estado local
-      const updatedRecords = [...records, newRecord];
-      setRecords(updatedRecords);
-      
-      // Manter backup local
-      localStorage.setItem(APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS, JSON.stringify(updatedRecords));
-      
-      return { 
-        success: true, 
-        message: 'Registro salvo com sucesso no Supabase',
-        backend: 'supabase'
-      };
-      } catch (error) {
-  console.error('Erro ao salvar registro na API:', error);
+  try {
+    const result = await apiService.saveRecord(newRecord);
 
-  // 🔒 Se for erro de duplicidade (UNIQUE constraint)
-  if (error?.code === '23505') {
+    const updatedRecords = [...records, newRecord];
+    setRecords(updatedRecords);
+
+    localStorage.setItem(
+      APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS,
+      JSON.stringify(updatedRecords)
+    );
+
     return {
-      success: false,
-      message: 'Presença já registrada para hoje.'
+      success: true,
+      message: 'Registro salvo com sucesso no Supabase',
+      backend: 'supabase'
+    };
+  } catch (error) {
+    console.error('Erro ao salvar registro na API:', error);
+
+    // 🔒 Erro de duplicidade
+    if (error?.code === '23505') {
+      return {
+        success: false,
+        message: 'Presença já registrada para hoje.'
+      };
+    }
+
+    // 🌐 Fallback offline
+    const updatedRecords = [...records, newRecord];
+    setRecords(updatedRecords);
+
+    localStorage.setItem(
+      APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS,
+      JSON.stringify(updatedRecords)
+    );
+
+    return {
+      success: true,
+      message: 'Registro salvo localmente. Os dados serão sincronizados quando a conexão for restaurada.',
+      savedLocally: true
     };
   }
-
-  // 🌐 Se for erro de conexão, usa fallback local
-  const updatedRecords = [...records, newRecord];
-  setRecords(updatedRecords);
-  localStorage.setItem(
-    APP_CONFIG.LOCAL_STORAGE_KEYS.ATTENDANCE_RECORDS,
-    JSON.stringify(updatedRecords)
-  );
-
-  return { 
-    success: true, 
-    message: 'Registro salvo localmente. Os dados serão sincronizados quando a conexão for restaurada.',
-    savedLocally: true 
-  };
-}
+};
 
   const clearAllRecords = async () => {
     try {
