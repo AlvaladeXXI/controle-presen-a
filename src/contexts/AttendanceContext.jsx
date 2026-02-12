@@ -84,7 +84,6 @@ export const AttendanceProvider = ({ children }) => {
       success: false,
       message: 'Presença já registrada para hoje.'
     };
-  }
 
   // 🌐 Se for erro de conexão, usa fallback local
   const updatedRecords = [...records, newRecord];
@@ -96,7 +95,6 @@ export const AttendanceProvider = ({ children }) => {
     message: 'Registro salvo localmente. Os dados serão sincronizados quando a conexão for restaurada.',
     savedLocally: true 
   };
-}
 
   const clearAllRecords = async () => {
     try {
