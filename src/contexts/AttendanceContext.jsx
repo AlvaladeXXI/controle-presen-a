@@ -62,6 +62,10 @@ export const AttendanceProvider = ({ children }) => {
   try {
     const result = await apiService.saveRecord(newRecord);
 
+    if (!result.success) {
+      return result;
+    }
+
     const updatedRecords = [...records, newRecord];
     setRecords(updatedRecords);
 
@@ -70,23 +74,22 @@ export const AttendanceProvider = ({ children }) => {
       JSON.stringify(updatedRecords)
     );
 
-    return {
-      success: true,
-      message: 'Registro salvo com sucesso no Supabase',
-      backend: 'supabase'
-    };
+    return result;
+
   } catch (error) {
     console.error('Erro ao salvar registro na API:', error);
 
-    // 🔒 Erro de duplicidade
-    if (error?.code === '23505') {
+    if (
+      error?.code === '23505' ||
+      error?.message?.toLowerCase().includes('duplicate') ||
+      error?.message?.toLowerCase().includes('unique')
+    ) {
       return {
         success: false,
         message: 'Presença já registrada para hoje.'
       };
     }
 
-    // 🌐 Fallback offline
     const updatedRecords = [...records, newRecord];
     setRecords(updatedRecords);
 
@@ -102,6 +105,7 @@ export const AttendanceProvider = ({ children }) => {
     };
   }
 };
+
 
   const clearAllRecords = async () => {
     try {
