@@ -81,14 +81,23 @@ const AttendanceForm = () => {
         hasPhoto: !!formData.photo
       });
 
-      // Mostrar mensagem apropriada baseada no resultado
+      // Só continua se success === true
+      if (!result?.success) {
+        toast({
+          title: "Erro ao registrar presença",
+          description: result?.message || "Erro inesperado.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       if (result.savedLocally) {
         setIsSavedLocally(true);
         toast({
-          title: "Registro salvo com sucesso!",
+          title: "Registro salvo localmente",
           description: result.message,
-          variant: "default"
-        });
+          });
+        
       } else {
         setIsSavedLocally(false);
         setBackend(result.backend);
