@@ -15,8 +15,8 @@ export const apiService = {
       
       return { 
         success: true, 
-        message: 'Registro salvo com sucesso no Supabase',
-        backend: 'supabase'
+        message: 'Presença confirmada',
+        
       };
     } catch (error) {
       console.error('Erro ao salvar registro:', error);
