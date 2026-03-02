@@ -211,6 +211,7 @@ const AttendanceForm = () => {
                 name="course"
                 value={formData.course}
                 onChange={handleInputChange}
+                readOnly={!!isFromUrl}
                 className="form-input"
                 placeholder="Nome do curso ou reunião"
               />
