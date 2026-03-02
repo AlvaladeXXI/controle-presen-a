@@ -25,9 +25,15 @@ const AttendanceForm = () => {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const courseFromUrl = urlParams.get('curso') || urlParams.get('course') || urlParams.get('reuniao');
+    const courseFromUrl = 
+      urlParams.get('curso') || 
+      urlParams.get('course') || 
+      urlParams.get('reuniao');
+    
     if (courseFromUrl) {
-      setFormData(prev => ({ ...prev, course: decodeURIComponent(courseFromUrl) }));
+      setFormData(prev => ({ 
+        ...prev, 
+        course: decodeURIComponent(courseFromUrl) }));
     }
   }, []);
 
@@ -137,7 +143,14 @@ const AttendanceForm = () => {
   if (showSuccess) {
     return <SuccessMessage isSavedLocally={isSavedLocally} backend={backend} />;
   }
-
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  const isFromUrl =
+    urlParams.get('curso') ||
+    urlParams.get('course') ||
+    urlParams.get('reuniao');
+  
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <motion.div
